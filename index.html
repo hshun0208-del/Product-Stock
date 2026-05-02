@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>在庫管理 | Magis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F6F5F1;--surface:#FFF;--surface2:#EEECEA;--border:#E3E1DB;
+  --text:#18181A;--muted:#8A8880;
+  --accent:#18181A;--yellow:#E8FF3C;
+  --green:#1A7A48;--gbg:#E6F4ED;
+  --blue:#1B4FD8;--bbg:#EBF0FD;
+  --orange:#C05F0E;--obg:#FEF3E6;
+  --red:#B52B2B;--rbg:#FCEAEA;
+  --nav:68px;--r:14px;
+  --sh:0 1px 6px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);max-width:430px;margin:0 auto;min-height:100vh;overflow-x:hidden}
+
+/* ── NAV ── */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);height:var(--nav);padding-bottom:env(safe-area-inset-bottom);z-index:200}
+.nt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;font-family:inherit;padding:8px 4px;transition:color .15s}
+.nt.on{color:var(--text)}
+.nt .ni{font-size:21px;line-height:1;transition:transform .15s}
+.nt.on .ni{transform:scale(1.1)}
+.nbdg{position:absolute;top:7px;right:calc(50% - 20px);background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+
+/* ── PAGES ── */
+.pg{display:none;padding-bottom:calc(var(--nav) + 20px);min-height:100vh}
+.pg.on{display:block}
+#pg-welcome.on{display:flex}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 12px;position:sticky;top:0;z-index:100;background:rgba(246,245,241,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.ttl{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px}
+.ib{width:38px;height:38px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;box-shadow:var(--sh);transition:transform .12s}
+.ib:active{transform:scale(.9)}
+.ibrow{display:flex;gap:8px;align-items:center}
+
+/* ── CARD ── */
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh);margin:0 16px 14px;overflow:hidden}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border)}
+.ct{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+
+/* ── STAT ROW ── */
+.srow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px;margin-bottom:14px}
+.sc{background:var(--surface);border-radius:12px;padding:14px 10px;text-align:center;box-shadow:var(--sh)}
+.sn{font-family:'Bebas Neue',sans-serif;font-size:32px;line-height:1;margin-bottom:3px}
+.sl{font-size:10px;color:var(--muted);font-weight:500}
+
+/* ── PRODUCT ROW ── */
+.pcard{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;align-items:center}
+.pcard:last-child{border-bottom:none}
+.pcard:active{background:var(--surface2)}
+.pimg{width:52px;height:52px;border-radius:10px;object-fit:cover;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;border:1px solid var(--border)}
+.pimg img{width:100%;height:100%;object-fit:cover}
+.pinfo{flex:1;min-width:0}
+.pname{font-size:14px;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcat{font-size:11px;color:var(--muted);margin-bottom:5px}
+.vchips{display:flex;gap:4px;flex-wrap:wrap}
+.vc{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;border:1.5px solid var(--border);color:var(--muted);background:var(--bg);white-space:nowrap}
+.vc.ok{border-color:var(--green);color:var(--green);background:var(--gbg)}
+.vc.low{border-color:var(--orange);color:var(--orange);background:var(--obg)}
+.vc.zero{border-color:var(--red);color:var(--red);background:var(--rbg)}
+.vc.minus{border-color:#7C3AED;color:#7C3AED;background:#F3EFFE;border-style:dashed}
+
+/* ── MINUS STOCK INDICATOR ── */
+.minus-tag{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#7C3AED;background:#F3EFFE;border:1.5px dashed #7C3AED;border-radius:5px;padding:1px 6px}
+.preorder-bar{background:linear-gradient(135deg,#7C3AED22,#7C3AED11);border:1px dashed #7C3AED44;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:8px}
+
+
+/* ── BADGE ── */
+.bdg{display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700}
+.b-ok{background:var(--gbg);color:var(--green)}
+.b-blue{background:var(--bbg);color:var(--blue)}
+.b-warn{background:var(--obg);color:var(--orange)}
+.b-red{background:var(--rbg);color:var(--red)}
+.b-gray{background:var(--surface2);color:var(--muted)}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:calc(var(--nav) + 14px);right:18px;width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;border:none;box-shadow:0 4px 20px rgba(0,0,0,.28);transition:transform .15s;z-index:150}
+.fab:active{transform:scale(.9)}
+
+/* ── SHEET ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:flex-end;justify-content:center}
+.overlay.on{display:flex;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.sheet{background:var(--surface);border-radius:22px 22px 0 0;width:100%;max-width:430px;max-height:93vh;overflow-y:auto;animation:slideUp .28s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.shdl{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0}
+.shtl{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.5px;padding:14px 20px 0}
+.shbd{padding:14px 20px 20px}
+
+/* ── FORMS ── */
+.fg{margin-bottom:16px}
+.fl{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px}
+.fi,.fsel{width:100%;padding:13px 15px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;font-size:16px;font-family:inherit;color:var(--text);outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none}
+.fi:focus,.fsel:focus{border-color:var(--accent)}
+
+/* ── SIZE INPUT ── */
+.sirow{display:flex;flex-direction:column;gap:8px}
+.sicell{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:10px;padding:10px 14px;border:1.5px solid var(--border)}
+.silbl{font-size:13px;font-weight:700;min-width:40px}
+.sictrl{display:flex;align-items:center;gap:10px}
+.sib{width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:all .12s;-webkit-user-select:none;user-select:none}
+.sib:active{background:var(--surface2);transform:scale(.9)}
+.sinum{font-family:'Bebas Neue',sans-serif;font-size:28px;min-width:36px;text-align:center;line-height:1}
+
+/* ── BUTTONS ── */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:all .15s}
+.btn:active{transform:scale(.97)}
+.btn-dark{background:var(--accent);color:var(--yellow)}
+.btn-sec{background:var(--surface2);color:var(--text)}
+.btn-red{background:var(--rbg);color:var(--red)}
+.btn-green{background:var(--green);color:#fff}
+.brow{display:flex;gap:10px}
+.brow .btn{flex:1}
+
+/* ── ORDER LOG ITEM ── */
+.oitem{padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+.oitem:last-child{border-bottom:none}
+.oitem:active{background:var(--surface2)}
+.otop{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.olines{display:flex;flex-wrap:wrap;gap:5px}
+.oline{font-size:11px;font-weight:600;background:var(--surface2);color:var(--text);padding:3px 8px;border-radius:5px}
+.odate{font-size:11px;color:var(--muted)}
+
+/* ── PILLS ── */
+.pills{display:flex;gap:6px;padding:0 16px 12px;overflow-x:auto;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);transition:all .15s}
+.pill.on{background:var(--accent);color:var(--yellow);border-color:var(--accent)}
+
+/* ── HISTORY ── */
+.li{display:flex;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border);align-items:flex-start}
+.li:last-child{border-bottom:none}
+.ldot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.lbody{flex:1;min-width:0}
+.ltext{font-size:13px;font-weight:500;margin-bottom:2px}
+.lmeta{font-size:11px;color:var(--muted)}
+.lqty{font-family:'Bebas Neue',sans-serif;font-size:20px;flex-shrink:0}
+
+/* ── SEARCH ── */
+.sbar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:0 14px;margin:0 16px 12px}
+.sbar input{flex:1;padding:11px 0;border:none;background:none;font-size:15px;font-family:inherit;color:var(--text);outline:none}
+
+/* ── IMG UPLOAD ── */
+.imgup{width:100%;height:140px;border:2px dashed var(--border);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;cursor:pointer;background:var(--bg);overflow:hidden;position:relative;transition:border-color .15s}
+.imgup:active{border-color:var(--accent)}
+.imgup img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.imgup .iov{position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#fff;font-size:12px;font-weight:600;opacity:0;transition:opacity .2s}
+.imgup:active .iov{opacity:1}
+
+/* ── SECTION LABEL ── */
+.slbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:0 16px 8px}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty .ei{font-size:44px;margin-bottom:10px}
+.empty .et{font-size:15px;font-weight:700;color:var(--text);margin-bottom:5px}
+.empty .ed{font-size:12px;line-height:1.6}
+
+/* ── SYNC BANNER ── */
+.syncbanner{display:flex;align-items:center;gap:10px;margin:0 16px 14px;background:var(--bbg);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--blue);font-weight:600;border:1px solid rgba(27,79,216,.15)}
+
+/* ── SETTINGS CARD ── */
+.setup-step{display:flex;gap:14px;padding:16px;border-bottom:1px solid var(--border)}
+.snum{width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--yellow);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sstitle{font-size:14px;font-weight:700;margin-bottom:4px}
+.ssdesc{font-size:12px;color:var(--muted);line-height:1.6}
+
+/* ── SPINNER ── */
+.spin{display:inline-block;width:18px;height:18px;border:2px solid rgba(27,79,216,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── LOADING SCREEN ── */
+#pg-loading{position:fixed;inset:0;background:var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;transition:opacity .4s}
+.ld-logo{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:2px;color:var(--yellow);line-height:1}
+.ld-sub{font-size:13px;color:rgba(255,255,255,.55);margin-top:-8px}
+.ld-spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--yellow);border-radius:50%;animation:spin .7s linear infinite;margin-top:8px}
+.ld-status{font-size:12px;color:rgba(255,255,255,.5)}
+
+/* ── TOAST ── */
+.twrap{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;width:90%;max-width:360px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.toast{background:var(--text);color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.25);width:100%;text-align:center;animation:tIn .22s cubic-bezier(.32,.72,0,1)}
+@keyframes tIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+
+/* ── GAS CODE ── */
+.gascode{background:var(--bg);border-radius:10px;padding:14px;font-size:10.5px;font-family:monospace;line-height:1.7;color:#333;overflow-x:auto;white-space:pre;max-height:300px;overflow-y:auto;border:1px solid var(--border)}
+</style>
+</head>
+<body>
+<!-- LOADING SCREEN -->
+<div id="pg-loading">
+  <div class="ld-logo">MAGIS</div>
+  <div class="ld-sub">在庫管理</div>
+  <div class="ld-spinner"></div>
+  <div class="ld-status" id="ld-status">接続中…</div>
+</div>
+
+<div class="twrap" id="twrap"></div>
+
+<!-- ═══ PAGE: HOME ═══ -->
+<div class="pg on" id="pg-home">
+  <div class="topbar">
+    <div class="ttl">MAGIS 在庫</div>
+    <div class="ibrow">
+      <div class="ib" id="sync-btn" onclick="syncAll()" title="Shopify同期">🔄</div>
+      <div class="ib" id="gas-status-btn" onclick="go('settings')" title="設定">⚙️</div>
+    </div>
+  </div>
+  <div id="sync-banner-area"></div>
+  <div class="srow">
+    <div class="sc"><div class="sn" id="st-p">0</div><div class="sl">商品数</div></div>
+    <div class="sc"><div class="sn" id="st-s" style="color:var(--blue)">0</div><div class="sl">総販売</div></div>
+    <div class="sc"><div class="sn" id="st-r" style="color:var(--orange)">0</div><div class="sl">返品</div></div>
+  </div>
+  <div id="alert-area"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px 8px">
+    <div class="slbl" style="padding:0">商品</div>
+    <div style="font-size:12px;color:var(--blue);cursor:pointer;font-weight:700" onclick="go('products')">すべて →</div>
+  </div>
+  <div class="card"><div id="home-list"></div></div>
+</div>
+
+<!-- ═══ PAGE: PRODUCTS ═══ -->
+<div class="pg" id="pg-products">
+  <div class="topbar">
+    <div class="ttl">商品</div>
+    <div class="ibrow">
+      <div class="ib" onclick="syncProducts()" title="商品同期">🔄</div>
+      <div class="ib" onclick="openAddProduct()">＋</div>
+    </div>
+  </div>
+  <div class="sbar">
+    <span style="color:var(--muted)">🔍</span>
+    <input type="search" placeholder="商品名で検索" oninput="filterProds(this.value)">
+  </div>
+  <div class="card"><div id="prod-list"></div></div>
+  <button class="fab" onclick="openAddProduct()">＋</button>
+</div>
+
+<!-- ═══ PAGE: ORDERS (readonly log) ═══ -->
+<div class="pg" id="pg-orders">
+  <div class="topbar">
+    <div class="ttl">注文ログ</div>
+    <div class="ibrow">
+      <div class="ib" onclick="syncOrders()" title="注文同期">🔄</div>
+    </div>
+  </div>
+
+  <!-- 4-stat summary -->
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0 16px;margin-bottom:14px">
+    <div class="sc" style="border-radius:12px">
+      <div class="sn" id="o-total">0</div><div class="sl">総注文件数</div>
+    </div>
+    <div class="sc" style="border-radius:12px">
+      <div class="sn" id="o-items" style="color:var(--blue)">0</div><div class="sl">総販売点数</div>
+    </div>
+    <div class="sc" style="border-radius:12px">
+      <div class="sn" id="o-single" style="color:var(--accent)">0</div><div class="sl">単品注文</div>
+    </div>
+    <div class="sc" style="border-radius:12px">
+      <div class="sn" id="o-bundle" style="color:var(--green)">0</div><div class="sl">まとめ買い</div>
+    </div>
+  </div>
+
+  <!-- Variant sales breakdown -->
+  <div class="slbl">バリアント別販売数</div>
+  <div class="card" style="padding:14px 16px;margin-bottom:14px">
+    <div id="variant-totals" style="display:flex;flex-wrap:wrap;gap:8px">
+      <span style="font-size:12px;color:var(--muted)">注文を同期すると表示されます</span>
+    </div>
+  </div>
+
+  <div class="pills" id="order-pills">
+    <div class="pill on" onclick="setOF(this,'all')">すべて</div>
+    <div class="pill" onclick="setOF(this,'sale')">販売のみ</div>
+    <div class="pill" onclick="setOF(this,'return')">返品のみ</div>
+    <div class="pill" onclick="setOF(this,'bundle')">まとめ買い</div>
+    <div class="pill" onclick="setOF(this,'cancelled')">✕ キャンセル</div>
+  </div>
+
+  <div class="card" id="order-log-card">
+    <div id="order-list"></div>
+  </div>
+</div>
+
+<!-- ═══ PAGE: SETTINGS ═══ -->
+<div class="pg" id="pg-settings">
+  <div class="topbar"><div class="ttl">設定</div></div>
+
+  <!-- Connection status -->
+  <div style="padding:0 16px 8px"><div class="slbl" style="padding:0 0 8px">Shopify × GAS 接続</div></div>
+  <div class="card" style="margin-bottom:14px">
+    <div id="conn-status" style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)">
+      <div id="conn-dot" style="width:9px;height:9px;border-radius:50%;background:var(--muted)"></div>
+      <div>
+        <div style="font-size:13px;font-weight:700" id="conn-label">未接続</div>
+        <div style="font-size:11px;color:var(--muted)" id="conn-sub">GAS URLを設定してください</div>
+      </div>
+    </div>
+    <div style="padding:14px 16px">
+      <div class="fg">
+        <label class="fl">GAS WebアプリURL</label>
+        <input class="fi" id="gas-url" placeholder="https://script.google.com/macros/s/..." style="font-size:13px;padding:12px 14px">
+      </div>
+      <div class="brow">
+        <button class="btn btn-sec" style="font-size:13px;padding:12px" onclick="testGas()">接続テスト</button>
+        <button class="btn btn-dark" style="font-size:13px;padding:12px" onclick="saveGasUrl()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shopify credentials (stored in GAS, not here) -->
+  <div style="padding:0 16px 8px"><div class="slbl" style="padding:0 0 8px">GASコードの取得</div></div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="setup-step">
+      <div class="snum">1</div>
+      <div>
+        <div class="sstitle">GASコードをコピー</div>
+        <div class="ssdesc">このコードにShopifyのストアURLとアクセストークンを書き込みます</div>
+      </div>
+    </div>
+    <div class="setup-step">
+      <div class="snum">2</div>
+      <div>
+        <div class="sstitle">Googleスプレッドシートを作成</div>
+        <div class="ssdesc">拡張機能 → Apps Script → コードを貼り付けてSHOP_URLとTOKENを入力</div>
+      </div>
+    </div>
+    <div class="setup-step" style="border-bottom:none">
+      <div class="snum">3</div>
+      <div>
+        <div class="sstitle">デプロイしてURLをここに貼る</div>
+        <div class="ssdesc">デプロイ → 新しいデプロイ → ウェブアプリ（全員アクセス可）→ URLをコピー</div>
+      </div>
+    </div>
+    <div style="padding:12px 16px 16px">
+      <button class="btn btn-sec" style="font-size:13px;padding:12px" onclick="showGasCode()">📋 GASコードを見る</button>
+    </div>
+  </div>
+
+  <!-- Sync controls -->
+  <div style="padding:0 16px 8px"><div class="slbl" style="padding:0 0 8px">データ同期</div></div>
+  <div class="card" style="padding:16px;margin-bottom:14px">
+    <div class="brow" style="margin-bottom:10px">
+      <button class="btn btn-sec" style="font-size:13px" onclick="syncProducts()">👕 商品同期</button>
+      <button class="btn btn-sec" style="font-size:13px" onclick="syncOrders()">🛒 注文同期</button>
+    </div>
+    <button class="btn btn-dark" style="font-size:13px" onclick="syncAll()">⚡ 全データ同期</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px;text-align:center" id="last-sync-label">最終同期: −</div>
+  </div>
+
+  <div style="padding:0 16px 8px"><div class="slbl" style="padding:0 0 8px">データ管理</div></div>
+  <div class="card" style="padding:16px">
+    <button class="btn btn-red" style="font-size:13px" onclick="resetAll()">⚠ すべてリセット</button>
+  </div>
+  <div style="height:12px"></div>
+</div>
+
+<!-- ═══ PAGE: HISTORY ═══ -->
+<div class="pg" id="pg-history">
+  <div class="topbar"><div class="ttl">履歴</div></div>
+  <div class="pills" id="hist-pills">
+    <div class="pill on" onclick="setLFilter(this,'')">すべて</div>
+    <div class="pill" onclick="setLFilter(this,'納品')">📦 納品</div>
+    <div class="pill" onclick="setLFilter(this,'販売')">🛒 販売</div>
+    <div class="pill" onclick="setLFilter(this,'返品')">↩ 返品</div>
+    <div class="pill" onclick="setLFilter(this,'ギフティング')">🎁 ギフティング</div>
+    <div class="pill" onclick="setLFilter(this,'製品破損')">💥 破損</div>
+  </div>
+  <div class="card"><div id="hist-list"></div></div>
+</div>
+
+
+<!-- ═══ NAV ═══ -->
+<nav class="bnav">
+  <button class="nt on" id="nt-home" onclick="go('home')"><span class="ni">🏠</span>ホーム</button>
+  <button class="nt" id="nt-products" onclick="go('products')"><span class="ni">👕</span>商品</button>
+  <button class="nt" id="nt-orders" onclick="go('orders')" style="position:relative"><span class="ni">🛒</span>注文ログ</button>
+  <button class="nt" id="nt-history" onclick="go('history')"><span class="ni">📋</span>履歴</button>
+</nav>
+
+<!-- ═══ SHEETS ═══ -->
+
+<!-- Product detail -->
+<div class="overlay" id="sh-detail">
+  <div class="sheet">
+    <div class="shdl"></div>
+    <div id="sh-detail-body"></div>
+  </div>
+</div>
+
+<!-- Add/Edit Product -->
+<div class="overlay" id="sh-product">
+  <div class="sheet">
+    <div class="shdl"></div>
+    <div class="shtl" id="sh-ptitle">商品を追加</div>
+    <div class="shbd">
+      <div class="fg">
+        <label class="fl">製品画像</label>
+        <div class="imgup" id="imgup" onclick="document.getElementById('imgfile').click()">
+          <div class="iov">📷<span>変更</span></div>
+          <span id="imgph" style="font-size:36px">👕</span>
+          <div style="font-size:12px;color:var(--muted)" id="imglbl">タップして画像を追加</div>
+          <img id="imgprev" style="display:none">
+        </div>
+        <input type="file" id="imgfile" accept="image/*" style="display:none" onchange="handleImg(this)">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg">
+          <label class="fl">商品名</label>
+          <input class="fi" id="f-name" placeholder="例：グラフィックTee">
+        </div>
+        <div class="fg">
+          <label class="fl">カテゴリ</label>
+          <input class="fi" id="f-cat" placeholder="例：アパレル">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Shopify商品ID（任意）</label>
+        <input class="fi" id="f-shopid" placeholder="Shopifyから自動取得でも可">
+      </div>
+      <!-- Variants pulled from Shopify or manual -->
+      <div class="fg">
+        <label class="fl">バリアント / サイズ（納品数）</label>
+        <div id="variant-input-list"></div>
+        <button class="btn btn-sec" style="font-size:12px;padding:10px;margin-top:8px" onclick="addVariantRow()">＋ バリアントを追加</button>
+      </div>
+      <div class="brow">
+        <button class="btn btn-sec" onclick="closeSheet('sh-product')">キャンセル</button>
+        <button class="btn btn-dark" onclick="saveProduct()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delivery sheet -->
+<div class="overlay" id="sh-delivery">
+  <div class="sheet">
+    <div class="shdl"></div>
+    <div class="shtl">📦 納品入力</div>
+    <div class="shbd">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px" id="dlv-pname"></div>
+      <div class="fg">
+        <label class="fl">納品数（バリアント別）</label>
+        <div id="dlv-variant-list" class="sirow"></div>
+      </div>
+      <div class="fg">
+        <label class="fl">メモ（任意）</label>
+        <input class="fi" id="dlv-note" placeholder="例：〇〇社から納品">
+      </div>
+      <div class="brow">
+        <button class="btn btn-sec" onclick="closeSheet('sh-delivery')">キャンセル</button>
+        <button class="btn btn-green" onclick="saveDelivery()">✓ 記録する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Order detail (readonly) -->
+<div class="overlay" id="sh-order-detail">
+  <div class="sheet">
+    <div class="shdl"></div>
+    <div id="sh-order-detail-body"></div>
+  </div>
+</div>
+
+<!-- GAS code -->
+<div class="overlay" id="sh-gascode">
+  <div class="sheet">
+    <div class="shdl"></div>
+    <div class="shtl">GAS コード</div>
+    <div class="shbd">
+      <div class="gascode" id="gascode-pre"></div>
+      <div style="height:12px"></div>
+      <button class="btn btn-dark" onclick="copyGasCode()">📋 コピー</button>
+      <div style="height:8px"></div>
+      <button class="btn btn-sec" onclick="closeSheet('sh-gascode')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- Adjustment sheet (gifting / damage) -->
+<div class="overlay" id="sh-adjust">
+  <div class="sheet">
+    <div class="shdl"></div>
+    <div class="shtl" id="sh-adjust-title">ギフティング記録</div>
+    <div class="shbd">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px" id="adj-pname"></div>
+
+      <!-- type selector -->
+      <div class="fg">
+        <label class="fl">種別</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="adj-type-row">
+          <div class="adj-type-btn on" onclick="setAdjType('gifting')" id="atype-gifting"
+            style="padding:12px;border-radius:10px;border:2px solid var(--accent);background:var(--surface2);cursor:pointer;text-align:center">
+            <div style="font-size:20px;margin-bottom:4px">🎁</div>
+            <div style="font-size:12px;font-weight:700">ギフティング</div>
+            <div style="font-size:10px;color:var(--muted)">インフルエンサー等</div>
+          </div>
+          <div class="adj-type-btn" onclick="setAdjType('damage')" id="atype-damage"
+            style="padding:12px;border-radius:10px;border:2px solid var(--border);background:var(--bg);cursor:pointer;text-align:center">
+            <div style="font-size:20px;margin-bottom:4px">💥</div>
+            <div style="font-size:12px;font-weight:700">製品破損</div>
+            <div style="font-size:10px;color:var(--muted)">廃棄扱い</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label class="fl">数量（バリアント別）</label>
+        <div id="adj-variant-list" class="sirow"></div>
+      </div>
+
+      <div class="fg">
+        <label class="fl" id="adj-note-label">備考（相手先・理由など）</label>
+        <input class="fi" id="adj-note" placeholder="例：@influencer_name">
+      </div>
+
+      <div style="background:var(--rbg);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--red);font-weight:600;margin-bottom:16px">
+        ⚠ 在庫から差し引かれます
+      </div>
+
+      <div class="brow">
+        <button class="btn btn-sec" onclick="closeSheet('sh-adjust')">キャンセル</button>
+        <button class="btn btn-dark" onclick="saveAdjust()">記録する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// ══════════════════════════════════════
+// GAS CODE (embedded)
+// ══════════════════════════════════════
+const GAS_SOURCE = `const CLIENT_ID     = '8c88a471229ebb5e7c85f25727ea976d';
+const CLIENT_SECRET = 'ここにシークレットを貼る';
+const SHOP          = 'goartokyo.myshopify.com';
+
+function getAccessToken() {
+  const props = PropertiesService.getScriptProperties();
+  let token = props.getProperty('ACCESS_TOKEN');
+  if (!token) { token = fetchNewToken(); props.setProperty('ACCESS_TOKEN', token); }
+  return token;
+}
+
+function fetchNewToken() {
+  const url = 'https://' + SHOP + '/admin/oauth/access_token';
+  const res = UrlFetchApp.fetch(url, {
+    method: 'post', contentType: 'application/json',
+    payload: JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: 'client_credentials' }),
+    muteHttpExceptions: true,
+  });
+  const data = JSON.parse(res.getContentText());
+  if (!data.access_token) throw new Error('token error: ' + res.getContentText());
+  return data.access_token;
+}
+
+function doGet(e)  { return route(e); }
+function doPost(e) { return route(e); }
+
+function route(e) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const p = e.parameter || {};
+    let body = {};
+    if (e.postData && e.postData.contents) {
+      try { body = JSON.parse(e.postData.contents); } catch(ex) {}
+    } else if (p.data) {
+      try { body = JSON.parse(p.data); } catch(ex) {}
+    }
+    const action = p.action || body.action;
+    let res;
+    switch(action) {
+      case 'ping':             res = { ok: true, store: SHOP }; break;
+      case 'getProducts':      res = shopifyProducts(); break;
+      case 'getOrders':        res = shopifyOrders(p.since || body.since); break;
+      case 'getStocks':        res = getStocks(); break;
+      case 'saveProducts':     res = saveProducts(body); break;
+      case 'saveOrders':       res = saveOrders(body); break;
+      case 'saveDelivery':     res = saveDelivery(body); break;
+      case 'getDeliveries':    res = getDeliveries(); break;
+      case 'saveAdjustment':   res = saveAdjustment(body); break;
+      case 'saveLocalProduct': res = saveLocalProduct(body); break;
+      default: res = { error: 'unknown: ' + action };
+    }
+    return json(res);
+  } catch(err) {
+    return json({ error: err.message });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function json(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function shopifyProducts() {
+  const token = getAccessToken();
+  const url = 'https://' + SHOP + '/admin/api/2024-01/products.json?limit=250&fields=id,title,product_type,images,variants';
+  const r = UrlFetchApp.fetch(url, { headers: { 'X-Shopify-Access-Token': token }, muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) return { error: r.getContentText() };
+  const data = JSON.parse(r.getContentText());
+  return {
+    products: data.products.map(p => ({
+      shopifyId: String(p.id), name: p.title,
+      category: p.product_type || '',
+      image: p.images && p.images[0] ? p.images[0].src : null,
+      variants: p.variants.map(v => ({ variantId: String(v.id), title: v.title, sku: v.sku || '' }))
+    }))
+  };
+}
+
+function shopifyOrders(since) {
+  const token = getAccessToken();
+  let url = 'https://' + SHOP + '/admin/api/2024-01/orders.json?status=any&limit=250';
+  if (since) url += '&created_at_min=' + since;
+  const r = UrlFetchApp.fetch(url, { headers: { 'X-Shopify-Access-Token': token }, muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) return { error: r.getContentText() };
+  const data = JSON.parse(r.getContentText());
+  const orders = data.orders.map(function(o) {
+    const isCancelled = !!o.cancelled_at;
+    const isReturn = !isCancelled && (o.financial_status === 'refunded' || (o.refunds && o.refunds.length > 0));
+    const uniqueProducts = new Set(o.line_items.map(function(li) { return li.product_id; })).size;
+    return {
+      shopifyOrderId: String(o.id),
+      orderNumber: o.order_number ? '#' + o.order_number : '',
+      type: isCancelled ? 'cancelled' : isReturn ? 'return' : 'sale',
+      isBundle: !isCancelled && !isReturn && uniqueProducts > 1,
+      cancelReason: o.cancel_reason || '',
+      date: o.created_at, cancelledAt: o.cancelled_at || null,
+      note: o.note || '',
+      customer: o.customer ? (o.customer.first_name + ' ' + o.customer.last_name).trim() : '',
+      items: o.line_items.map(function(li) { return {
+        productId: String(li.product_id), variantId: String(li.variant_id),
+        productName: li.name, variantTitle: li.variant_title || li.title,
+        sku: li.sku || '', qty: li.quantity,
+      }; })
+    };
+  });
+  return { orders: orders };
+}
+
+function saveProducts(body) {
+  const sh = getSheet('products', ['shopifyId','name','category','variants','updatedAt']);
+  sh.clearContents();
+  sh.appendRow(['shopifyId','name','category','variants','updatedAt']);
+  const now = new Date().toISOString();
+  (body.products || []).forEach(function(p) {
+    const variantStr = (p.variants || []).map(function(v) { return v.title + '(' + (v.stock||0) + ')'; }).join(', ');
+    sh.appendRow([p.shopifyId, p.name, p.category, variantStr, now]);
+  });
+  return { ok: true };
+}
+
+function saveOrders(body) {
+  const sh = getSheet('orders', ['shopifyOrderId','orderNumber','type','date','customer','items','note']);
+  const rows = sh.getDataRange().getValues();
+  const existingIds = new Set(rows.slice(1).map(function(r) { return String(r[0]); }));
+  (body.orders || []).forEach(function(o) {
+    if (existingIds.has(String(o.shopifyOrderId))) return;
+    const itemsStr = (o.items || []).map(function(i) { return i.productName + ' ' + i.variantTitle + 'x' + i.qty; }).join(', ');
+    sh.appendRow([o.shopifyOrderId, o.orderNumber, o.type, o.date, o.customer, itemsStr, o.note || '']);
+  });
+  return { ok: true };
+}
+
+function saveDelivery(body) {
+  const sh = getSheet('delivery', ['date','productId','productName','variantTitle','qty','note','user']);
+  const d = body.delivery;
+  (d.variants || []).forEach(function(v) {
+    if (v.qty > 0) sh.appendRow([d.date, d.productId, d.productName, v.title, v.qty, d.note||'', d.user||'']);
+  });
+  return { ok: true };
+}
+
+function getDeliveries() {
+  const sh = getSheet('delivery', ['date','productId','productName','variantTitle','qty','note','user']);
+  const rows = sh.getDataRange().getValues();
+  if (rows.length <= 1) return { deliveries: [] };
+  const hdrs = rows[0];
+  return { deliveries: rows.slice(1).map(function(r) { const o={}; hdrs.forEach(function(h,i){o[h]=r[i];}); return o; }) };
+}
+
+function saveAdjustment(body) {
+  const sh = getSheet('adjustment', ['date','type','productId','productName','variantTitle','qty','note','user']);
+  const a = body.adjustment;
+  (a.variants || []).forEach(function(v) {
+    if (v.qty > 0) sh.appendRow([a.date, a.type, a.productId, a.productName, v.title, v.qty, a.note||'', a.user||'']);
+  });
+  return { ok: true };
+}
+
+function saveLocalProduct(body) {
+  const sh = getSheet('product_meta', ['productId','memo','localImg']);
+  const p = body.product;
+  const rows = sh.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] == p.productId) { sh.getRange(i+1,1,1,3).setValues([[p.productId,p.memo||'',p.localImg||'']]); return { ok:true }; }
+  }
+  sh.appendRow([p.productId, p.memo||'', p.localImg||'']);
+  return { ok: true };
+}
+
+function getStocks() {
+  var stocks = {};
+  // delivery シートから納品数を集計
+  try {
+    var dsh = getSheet('delivery', ['date','productId','productName','variantTitle','qty','note','user']);
+    var drows = dsh.getDataRange().getValues();
+    for (var i = 1; i < drows.length; i++) {
+      var vid = String(drows[i][0]) + '_' + String(drows[i][3]);
+      var key = drows[i][1] + '|' + drows[i][3]; // productId|variantTitle
+      if (!stocks[key]) stocks[key] = { delivery: 0, gifting: 0, damage: 0 };
+      stocks[key].delivery += Number(drows[i][4]) || 0;
+    }
+  } catch(e) {}
+  // adjustment シートからギフティング・破損を集計
+  try {
+    var ash = getSheet('adjustment', ['date','type','productId','productName','variantTitle','qty','note','user']);
+    var arows = ash.getDataRange().getValues();
+    for (var j = 1; j < arows.length; j++) {
+      var akey = arows[j][2] + '|' + arows[j][4]; // productId|variantTitle
+      if (!stocks[akey]) stocks[akey] = { delivery: 0, gifting: 0, damage: 0 };
+      var atype = String(arows[j][1]);
+      var aqty = Number(arows[j][5]) || 0;
+      if (atype === 'gifting') stocks[akey].gifting += aqty;
+      else if (atype === 'damage') stocks[akey].damage += aqty;
+    }
+  } catch(e) {}
+  return { stocks: stocks };
+}
+
+function getSheet(name, headers) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(name);
+  if (!sh) { sh = ss.insertSheet(name); sh.appendRow(headers); }
+  return sh;
+}`;
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxzdWZCyKrZsAt1nJ48J2JS01A1h2riR9HrdAGHITtGPI0z9bqDPlrI222J9AklPRZn-w/exec';
+
+let ST = {
+  products: [],
+  orders: [],
+  deliveries: [],
+  logs: [],
+  gasUrl: DEFAULT_GAS_URL,
+  gasConnected: false,
+  lastSync: null,
+  _pf: '',
+  _of: 'all',
+  _lf: '',
+  _editPid: null,
+  _dlvPid: null,
+  _adjPid: null,
+  _adjType: 'gifting',
+  _initialized: false,
+};
+
+function load() {
+  try {
+    const d = localStorage.getItem('magis4');
+    if (d) Object.assign(ST, JSON.parse(d));
+    // GAS URLは常に最新を使う
+    ST.gasUrl = DEFAULT_GAS_URL;
+    if (!ST._initialized) ST._initialized = false;
+  } catch(e) {}
+}
+function save() { try { localStorage.setItem('magis4', JSON.stringify(ST)); } catch(e) {} }
+
+function seedDemo() {
+  ST.products = [
+    {
+      id: uid(), shopifyId: 'demo-1', name: 'グラフィックTシャツ', category: 'アパレル',
+      image: null, localImg: null, memo: '',
+      variants: [
+        {variantId:'v1',title:'S',sku:'TEE-S',stock:5},
+        {variantId:'v2',title:'M',sku:'TEE-M',stock:20},
+        {variantId:'v3',title:'L',sku:'TEE-L',stock:15},
+        {variantId:'v4',title:'XL',sku:'TEE-XL',stock:8},
+      ]
+    },
+    {
+      id: uid(), shopifyId: 'demo-2', name: 'ロゴキャップ', category: 'アクセサリー',
+      image: null, localImg: null, memo: '',
+      variants: [
+        {variantId:'v5',title:'フリーサイズ',sku:'CAP-FREE',stock:10},
+      ]
+    },
+    {
+      id: uid(), shopifyId: 'demo-3', name: 'カラースウェット', category: 'アパレル',
+      image: null, localImg: null, memo: '',
+      variants: [
+        {variantId:'v6',title:'S / ブラック',sku:'SW-S-BK',stock:3},
+        {variantId:'v7',title:'M / ブラック',sku:'SW-M-BK',stock:8},
+        {variantId:'v8',title:'S / ホワイト',sku:'SW-S-WH',stock:2},
+        {variantId:'v9',title:'M / ホワイト',sku:'SW-M-WH',stock:6},
+      ]
+    },
+  ];
+  ST.orders = [
+    {shopifyOrderId:'1001',orderNumber:'#1001',type:'sale',isBundle:false,date:ago(2),customer:'田中 太郎',note:'',
+     items:[{productId:'demo-1',variantId:'v1',productName:'グラフィックTシャツ',variantTitle:'S',sku:'TEE-S',qty:8}]},
+    {shopifyOrderId:'1002',orderNumber:'#1002',type:'sale',isBundle:true,date:ago(1),customer:'鈴木 花子',note:'',
+     items:[
+       {productId:'demo-1',variantId:'v3',productName:'グラフィックTシャツ',variantTitle:'L',sku:'TEE-L',qty:3},
+       {productId:'demo-2',variantId:'v5',productName:'ロゴキャップ',variantTitle:'フリーサイズ',sku:'CAP-FREE',qty:2},
+     ]},
+    {shopifyOrderId:'1003',orderNumber:'#1003',type:'return',isBundle:false,date:ago(0),customer:'山田 一郎',note:'サイズ交換',
+     items:[{productId:'demo-1',variantId:'v2',productName:'グラフィックTシャツ',variantTitle:'M',sku:'TEE-M',qty:1}]},
+  ];
+  ST.logs = [
+    {id:uid(),type:'ギフティング',productName:'グラフィックTシャツ',detail:'S×1 M×1',note:'@demo_influencer',date:ago(3)},
+    {id:uid(),type:'製品破損',productName:'カラースウェット',detail:'S / ブラック×1',note:'輸送中破損',date:ago(4)},
+  ];
+  save();
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2,4); }
+function ago(d) { return new Date(Date.now() - d * 86400000).toISOString(); }
+
+// Sold qty per variantId
+// 在庫マップ（GASから取得したstocksデータを使う）
+// stocks[productId|variantTitle] = { delivery, gifting, damage, sold, returned }
+let _stocksCache = {};
+
+function netForVariant(v, sm, rm) {
+  // productId|variantTitle キーでGAS計算済みの在庫を検索
+  const p = ST.products.find(x => x.variants.some(vv => vv.variantId === v.variantId || vv === v));
+  if (p) {
+    const key = (p.shopifyId || p.id) + '|' + v.title;
+    const s = _stocksCache[key];
+    if (s && (s.delivery > 0 || s.sold > 0)) {
+      return (s.delivery||0) - (s.gifting||0) - (s.damage||0) - (s.sold||0) + (s.returned||0);
+    }
+  }
+  // キャッシュがない場合はローカル計算
+  return (v.stock || 0) - ((sm && sm[v.variantId]) || 0) + ((rm && rm[v.variantId]) || 0);
+}
+
+function soldMap() {
+  const m = {};
+  ST.orders.filter(o => o.type === 'sale').forEach(o => {
+    o.items.forEach(i => {
+      if (i.variantId) m[i.variantId] = (m[i.variantId] || 0) + i.qty;
+    });
+  });
+  return m;
+}
+
+function returnMap() {
+  const m = {};
+  ST.orders.filter(o => o.type === 'return').forEach(o => {
+    o.items.forEach(i => {
+      if (i.variantId) m[i.variantId] = (m[i.variantId] || 0) + i.qty;
+    });
+  });
+  return m;
+}
+function variantStatus(net) {
+  if (net < 0)  return 'minus';
+  if (net === 0) return 'zero';
+  if (net <= 5) return 'low';
+  return 'ok';
+}
+
+// ══════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════
+function go(tab) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nt').forEach(n => n.classList.remove('on'));
+  document.getElementById('pg-' + tab).classList.add('on');
+  document.getElementById('nt-' + tab)?.classList.add('on');
+  const renders = { home: renderHome, products: renderProds, orders: renderOrders, history: renderHist, settings: renderSettings };
+  renders[tab]?.();
+}
+
+// ══════════════════════════════════════
+// HOME
+// ══════════════════════════════════════
+function renderHome() {
+  const sm = soldMap(), rm = returnMap();
+  const totalSold = Object.values(sm).reduce((a,b)=>a+b,0);
+  const totalRet  = Object.values(rm).reduce((a,b)=>a+b,0);
+  document.getElementById('st-p').textContent = ST.products.length;
+  document.getElementById('st-s').textContent = totalSold;
+  document.getElementById('st-r').textContent = totalRet;
+
+  // Sync banner - 常に非表示（自動接続のため）
+  const banner = document.getElementById('sync-banner-area');
+  banner.innerHTML = '';
+
+  // Alerts — separate minus (preorder) from low
+  const alertEl = document.getElementById('alert-area');
+  const minusAlerts = [], lowAlerts = [];
+  ST.products.forEach(p => {
+    p.variants.forEach(v => {
+      const net = netForVariant(v, sm, rm);
+      if (net < 0) minusAlerts.push({p, v, net});
+      else if (net < 5) lowAlerts.push({p, v, net});
+    });
+  });
+
+  let alertHtml = '';
+  // Minus = preorder overrun (purple, non-alarming label)
+  minusAlerts.slice(0,3).forEach(({p,v,net}) => {
+    alertHtml += `<div style="display:flex;align-items:center;gap:10px;margin:0 16px 8px;background:#F3EFFE;border-radius:10px;padding:12px 14px;border-left:4px dashed #7C3AED;cursor:pointer" onclick="openDetail('${p.id}')">
+      <span style="font-size:18px">📋</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name} <span style="font-size:10px;background:#7C3AED;color:#fff;padding:1px 6px;border-radius:4px">${v.title}</span></div>
+        <div style="font-size:11px;color:#7C3AED;font-weight:600">予約超過 ${net}（納品待ち）</div>
+      </div>
+    </div>`;
+  });
+  // Low = actual warning
+  lowAlerts.slice(0,2).forEach(({p,v,net}) => {
+    alertHtml += `<div style="display:flex;align-items:center;gap:10px;margin:0 16px 8px;background:var(--obg);border-radius:10px;padding:12px 14px;border-left:4px solid var(--orange);cursor:pointer" onclick="openDetail('${p.id}')">
+      <span style="font-size:18px">⚠️</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name} <span style="font-size:10px;background:var(--orange);color:#fff;padding:1px 6px;border-radius:4px">${v.title}</span></div>
+        <div style="font-size:11px;color:var(--orange);font-weight:600">残り在庫: ${net}</div>
+      </div>
+    </div>`;
+  });
+  alertEl.innerHTML = alertHtml;
+
+  document.getElementById('home-list').innerHTML =
+    ST.products.length === 0
+      ? `<div class="empty"><div class="ei">👕</div><div class="et">商品がありません</div><div class="ed">設定からShopify同期、または手動で追加</div></div>`
+      : ST.products.slice(0, 6).map(p => prodRow(p, sm, rm)).join('');
+
+  updateConnStatus();
+}
+
+function prodRow(p, sm, rm) {
+  const chips = p.variants.map(v => {
+    const net = netForVariant(v, sm, rm);
+    const st  = variantStatus(net);
+    const lbl = st === 'minus' ? `${v.title} ${net}（超過）` : `${v.title} ${net}`;
+    return `<div class="vc ${st}">${lbl}</div>`;
+  }).join('');
+  const imgEl = (p.localImg || p.image)
+    ? `<div class="pimg"><img src="${p.localImg || p.image}" alt="${p.name}"></div>`
+    : `<div class="pimg">👕</div>`;
+  return `<div class="pcard" onclick="openDetail('${p.id}')">
+    ${imgEl}
+    <div class="pinfo">
+      <div class="pname">${p.name}</div>
+      <div class="pcat">${p.category}</div>
+      <div class="vchips">${chips}</div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════
+// PRODUCTS
+// ══════════════════════════════════════
+function renderProds() {
+  const q = ST._pf.toLowerCase();
+  const list = q ? ST.products.filter(p => p.name.toLowerCase().includes(q)) : ST.products;
+  const sm = soldMap(), rm = returnMap();
+  document.getElementById('prod-list').innerHTML = list.length === 0
+    ? `<div class="empty"><div class="ei">🔍</div><div class="et">見つかりません</div></div>`
+    : list.map(p => prodRow(p, sm, rm)).join('');
+}
+function filterProds(q) { ST._pf = q; renderProds(); }
+
+// ══════════════════════════════════════
+// PRODUCT DETAIL
+// ══════════════════════════════════════
+function openDetail(id) {
+  const p = ST.products.find(x => x.id === id);
+  if (!p) return;
+  const sm = soldMap(), rm = returnMap();
+
+  const imgHtml = (p.localImg || p.image)
+    ? `<img src="${p.localImg || p.image}" style="width:100%;height:160px;object-fit:cover;display:block">`
+    : `<div style="height:100px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:48px">👕</div>`;
+
+  const hasMinus = p.variants.some(v => netForVariant(v, sm, rm) < 0);
+
+  const variantTable = p.variants.map(v => {
+    const sold = sm[v.variantId] || 0;
+    const ret  = rm[v.variantId] || 0;
+    const net  = netForVariant(v, sm, rm);
+    const st   = variantStatus(net);
+    const col  = st==='minus'?'#7C3AED': st==='zero'?'var(--red)': st==='low'?'var(--orange)':'var(--green)';
+    const netDisplay = st === 'minus'
+      ? `<span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#7C3AED">${net}</span><span class="minus-tag" style="margin-left:4px;font-size:9px">予約超過</span>`
+      : `<span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${col}">${net}</span>`;
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:10px 16px;font-size:13px;font-weight:700">${v.title}</td>
+      <td style="padding:10px 8px;font-size:13px;text-align:center">${v.stock}</td>
+      <td style="padding:10px 8px;font-size:13px;text-align:center;color:var(--blue)">${sold}</td>
+      <td style="padding:10px 8px;font-size:13px;text-align:center;color:var(--orange)">${ret}</td>
+      <td style="padding:10px 16px;text-align:right">${netDisplay}</td>
+    </tr>`;
+  }).join('');
+
+  const minusBanner = hasMinus ? `
+    <div class="preorder-bar" style="margin:0 18px 12px">
+      <span style="font-size:18px">📋</span>
+      <div style="font-size:12px;color:#7C3AED;font-weight:600">予約超過中のバリアントがあります<br><span style="font-weight:400;color:var(--muted)">納品後に在庫がプラスになります</span></div>
+    </div>` : '';
+
+  document.getElementById('sh-detail-body').innerHTML = `
+    ${imgHtml}
+    <div style="padding:16px 18px 8px;display:flex;align-items:flex-start;justify-content:space-between">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.5px">${p.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${p.category}${p.shopifyId?' · ID: '+p.shopifyId:''}</div>
+      </div>
+    </div>
+    ${minusBanner}
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="background:var(--bg)">
+        <th style="padding:8px 16px;font-size:10px;color:var(--muted);text-align:left;font-weight:700;letter-spacing:.07em">バリアント</th>
+        <th style="padding:8px 8px;font-size:10px;color:var(--muted);text-align:center;font-weight:700">納品</th>
+        <th style="padding:8px 8px;font-size:10px;color:var(--blue);text-align:center;font-weight:700">販売</th>
+        <th style="padding:8px 8px;font-size:10px;color:var(--orange);text-align:center;font-weight:700">返品</th>
+        <th style="padding:8px 16px;font-size:10px;color:var(--muted);text-align:right;font-weight:700">残</th>
+      </tr></thead>
+      <tbody>${variantTable}</tbody>
+    </table>
+    <div style="padding:14px 18px">
+      <div class="brow" style="margin-bottom:10px">
+        <button class="btn btn-green" onclick="closeSheet('sh-detail');openDelivery('${p.id}')">📦 納品入力</button>
+        <button class="btn btn-sec" onclick="closeSheet('sh-detail');openEditProduct('${p.id}')">✏ 編集</button>
+      </div>
+      <div class="brow" style="margin-bottom:10px">
+        <button class="btn" style="background:#F3EFFE;color:#7C3AED;flex:1" onclick="closeSheet('sh-detail');openAdjust('${p.id}','gifting')">🎁 ギフティング</button>
+        <button class="btn" style="background:var(--rbg);color:var(--red);flex:1" onclick="closeSheet('sh-detail');openAdjust('${p.id}','damage')">💥 製品破損</button>
+      </div>
+      <button class="btn btn-red" onclick="closeSheet('sh-detail');deleteProduct('${p.id}')">🗑 削除</button>
+    </div>`;
+  openSheet('sh-detail');
+}
+
+// ══════════════════════════════════════
+// ADD / EDIT PRODUCT
+// ══════════════════════════════════════
+let _editVariants = []; // [{variantId, title, sku, stock}]
+
+function openAddProduct() {
+  ST._editPid = null;
+  document.getElementById('sh-ptitle').textContent = '商品を追加';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-cat').value = '';
+  document.getElementById('f-shopid').value = '';
+  clearImg();
+  _editVariants = [{variantId: uid(), title: 'S', sku: '', stock: 0}];
+  renderVariantInputs();
+  openSheet('sh-product');
+}
+
+function openEditProduct(id) {
+  const p = ST.products.find(x => x.id === id);
+  if (!p) return;
+  ST._editPid = id;
+  document.getElementById('sh-ptitle').textContent = '商品を編集';
+  document.getElementById('f-name').value = p.name;
+  document.getElementById('f-cat').value = p.category;
+  document.getElementById('f-shopid').value = p.shopifyId || '';
+  if (p.localImg) setImg(p.localImg); else clearImg();
+  _editVariants = p.variants.map(v => ({...v}));
+  renderVariantInputs();
+  openSheet('sh-product');
+}
+
+function renderVariantInputs() {
+  document.getElementById('variant-input-list').innerHTML = _editVariants.map((v, i) => `
+    <div style="display:grid;grid-template-columns:1fr 1fr 80px 32px;gap:6px;margin-bottom:8px;align-items:center">
+      <input class="fi" style="padding:10px 12px;font-size:14px" placeholder="S / ブラック など" value="${v.title}" oninput="_editVariants[${i}].title=this.value">
+      <input class="fi" style="padding:10px 12px;font-size:14px" placeholder="SKU" value="${v.sku||''}" oninput="_editVariants[${i}].sku=this.value">
+      <div style="display:flex;align-items:center;gap:4px">
+        <div class="sib" onclick="adjEV(${i},-1)" style="width:30px;height:30px;font-size:16px">−</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;min-width:28px;text-align:center" id="evn-${i}">${v.stock||0}</div>
+        <div class="sib" onclick="adjEV(${i},1)" style="width:30px;height:30px;font-size:16px">＋</div>
+      </div>
+      <div onclick="removeEV(${i})" style="color:var(--red);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</div>
+    </div>`).join('');
+}
+
+function adjEV(i, delta) {
+  _editVariants[i].stock = Math.max(0, (_editVariants[i].stock || 0) + delta);
+  document.getElementById('evn-' + i).textContent = _editVariants[i].stock;
+}
+function removeEV(i) { _editVariants.splice(i, 1); renderVariantInputs(); }
+function addVariantRow() { _editVariants.push({variantId: uid(), title:'', sku:'', stock:0}); renderVariantInputs(); }
+
+function handleImg(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => setImg(e.target.result);
+  reader.readAsDataURL(file);
+}
+function setImg(src) {
+  document.getElementById('imgprev').src = src;
+  document.getElementById('imgprev').style.display = 'block';
+  document.getElementById('imgph').style.display = 'none';
+  document.getElementById('imglbl').style.display = 'none';
+  document.getElementById('imgup').dataset.img = src;
+}
+function clearImg() {
+  document.getElementById('imgprev').style.display = 'none';
+  document.getElementById('imgph').style.display = '';
+  document.getElementById('imglbl').style.display = '';
+  document.getElementById('imgup').dataset.img = '';
+}
+
+function saveProduct() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { toast('商品名を入力してください', 'w'); return; }
+  if (_editVariants.length === 0) { toast('バリアントを1つ以上追加してください', 'w'); return; }
+  const cat = document.getElementById('f-cat').value.trim() || 'その他';
+  const shopifyId = document.getElementById('f-shopid').value.trim() || '';
+  const localImg = document.getElementById('imgup').dataset.img || null;
+
+  if (ST._editPid) {
+    const p = ST.products.find(x => x.id === ST._editPid);
+    Object.assign(p, {name, category: cat, shopifyId, localImg, variants: _editVariants});
+    toast('更新しました');
+  } else {
+    ST.products.push({id: uid(), shopifyId, name, category: cat, image: null, localImg, memo: '', variants: _editVariants});
+    toast('商品を追加しました');
+  }
+  save(); closeSheet('sh-product'); renderHome(); renderProds();
+}
+
+function deleteProduct(id) {
+  if (!confirm('削除しますか？')) return;
+  ST.products = ST.products.filter(p => p.id !== id);
+  save(); renderHome(); renderProds(); toast('削除しました', 'w');
+}
+
+// ══════════════════════════════════════
+// DELIVERY 納品
+// ══════════════════════════════════════
+let _dlvQtys = {}; // variantId -> qty
+
+function openDelivery(id) {
+  const p = ST.products.find(x => x.id === id);
+  ST._dlvPid = id;
+  _dlvQtys = {};
+  p.variants.forEach(v => { _dlvQtys[v.variantId] = 0; });
+  document.getElementById('dlv-pname').textContent = p.name;
+  document.getElementById('dlv-note').value = '';
+  document.getElementById('dlv-variant-list').innerHTML = p.variants.map(v => `
+    <div class="sicell">
+      <div class="silbl">${v.title}<div style="font-size:10px;color:var(--muted);font-weight:400">在庫: ${v.stock}</div></div>
+      <div class="sictrl">
+        <div class="sib" onclick="adjDlv('${v.variantId}',-1)">−</div>
+        <div class="sinum" id="dlvn-${v.variantId}">0</div>
+        <div class="sib" onclick="adjDlv('${v.variantId}',1)">＋</div>
+      </div>
+    </div>`).join('');
+  openSheet('sh-delivery');
+}
+
+function adjDlv(vid, delta) {
+  _dlvQtys[vid] = Math.max(0, (_dlvQtys[vid] || 0) + delta);
+  document.getElementById('dlvn-' + vid).textContent = _dlvQtys[vid];
+}
+
+async function saveDelivery() {
+  const p = ST.products.find(x => x.id === ST._dlvPid);
+  const total = Object.values(_dlvQtys).reduce((a,b) => a+b, 0);
+  if (total === 0) { toast('数量を入力してください', 'w'); return; }
+  const note = document.getElementById('dlv-note').value.trim();
+
+  // Apply to local stock
+  p.variants.forEach(v => { v.stock = (v.stock || 0) + (_dlvQtys[v.variantId] || 0); });
+
+  // Build delivery record
+  const dlvRecord = {
+    id: uid(), date: new Date().toISOString(), productId: p.shopifyId || p.id,
+    productName: p.name, note, user: '管理者',
+    variants: p.variants.map(v => ({variantId: v.variantId, title: v.title, qty: _dlvQtys[v.variantId] || 0}))
+  };
+  ST.deliveries.push(dlvRecord);
+  addLog('納品', p.name, dlvRecord.variants.filter(v=>v.qty>0).map(v=>`${v.title}×${v.qty}`).join(' '), note);
+
+  // GASに送信（接続状態に関わらず常に試みる）
+  try {
+    await gasPost({action: 'saveDelivery', delivery: dlvRecord});
+    const stockData = await gasGet({action:'getStocks'});
+    applyStocks(stockData.stocks || {});
+  } catch(e) {
+    console.warn('GAS sync failed:', e.message);
+  }
+
+  save(); closeSheet('sh-delivery'); renderHome(); renderProds();
+  toast(`${p.name} 納品を記録しました`);
+}
+
+// ══════════════════════════════════════
+// ORDERS (readonly log)
+// ══════════════════════════════════════
+function renderOrders() {
+  const sales     = ST.orders.filter(o => o.type === 'sale');
+  const returns   = ST.orders.filter(o => o.type === 'return');
+  const cancelled = ST.orders.filter(o => o.type === 'cancelled');
+  const single    = sales.filter(o => !o.isBundle);
+  const bundle    = sales.filter(o => o.isBundle);
+  const totalItems = sales.reduce((a,o) => a + o.items.reduce((b,i) => b+i.qty, 0), 0);
+
+  document.getElementById('o-total').textContent  = ST.orders.length;
+  document.getElementById('o-items').textContent  = totalItems;
+  document.getElementById('o-single').textContent = single.length;
+  document.getElementById('o-bundle').textContent = bundle.length;
+
+  // Variant totals (cancelled除外)
+  const vtMap = {};
+  sales.forEach(o => o.items.forEach(i => {
+    const key = i.variantTitle || i.sku || i.variantId;
+    vtMap[key] = (vtMap[key] || 0) + i.qty;
+  }));
+  const vtEl = document.getElementById('variant-totals');
+  const sorted = Object.entries(vtMap).sort((a,b) => b[1]-a[1]);
+  vtEl.innerHTML = sorted.length === 0
+    ? `<span style="font-size:12px;color:var(--muted)">注文を同期すると表示されます</span>`
+    : sorted.map(([k,v]) => `<div style="background:var(--bbg);border-radius:8px;padding:8px 12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--blue)">${v}</div><div style="font-size:10px;color:var(--muted);font-weight:700">${k}</div></div>`).join('');
+
+  // Order list filter
+  let list = ST.orders;
+  if (ST._of === 'sale')      list = sales;
+  if (ST._of === 'return')    list = returns;
+  if (ST._of === 'bundle')    list = bundle;
+  if (ST._of === 'cancelled') list = cancelled;
+  list = [...list].sort((a,b) => new Date(b.date)-new Date(a.date));
+
+  const el = document.getElementById('order-list');
+  el.innerHTML = list.length === 0
+    ? `<div class="empty"><div class="ei">🛒</div><div class="et">注文がありません</div><div class="ed">設定からShopify注文を同期してください</div></div>`
+    : list.map(orderRow).join('');
+}
+
+function orderRow(o) {
+  const isCancelled = o.type === 'cancelled';
+  const typeBadge = isCancelled
+    ? `<span class="bdg" style="background:#F1F5F9;color:#64748B;text-decoration:line-through">✕ キャンセル</span>`
+    : o.type === 'return'
+      ? `<span class="bdg b-warn">↩ 返品</span>`
+      : o.isBundle
+        ? `<span class="bdg b-ok">🛍 まとめ買い</span>`
+        : `<span class="bdg b-blue">単品</span>`;
+  const lines = o.items.map(i =>
+    `<div class="oline" style="${isCancelled?'opacity:.45;text-decoration:line-through':''}">${i.productName.length > 12 ? i.productName.slice(0,12)+'…' : i.productName} ${i.variantTitle} ×${i.qty}</div>`
+  ).join('');
+  const cancelNote = isCancelled && o.cancelReason
+    ? `<div style="font-size:11px;color:#94A3B8;margin-top:4px">理由: ${cancelReasonJa(o.cancelReason)}</div>` : '';
+  return `<div class="oitem" onclick="openOrderDetail('${o.shopifyOrderId}')" style="${isCancelled?'opacity:.7':''}">
+    <div class="otop">
+      <div style="display:flex;align-items:center;gap:6px">${typeBadge}<span style="font-size:12px;font-weight:700;color:var(--muted)">${o.orderNumber||'−'}</span></div>
+      <div class="odate">${fmtDate(o.date)}</div>
+    </div>
+    <div class="olines">${lines}</div>
+    ${cancelNote}
+    ${o.note ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">📝 ${o.note}</div>` : ''}
+  </div>`;
+}
+
+function cancelReasonJa(r) {
+  return {customer:'顧客都合', fraud:'不正注文', inventory:'在庫不足', declined:'支払い拒否', other:'その他'}[r] || r;
+}
+
+function openOrderDetail(oid) {
+  const o = ST.orders.find(x => x.shopifyOrderId === oid);
+  if (!o) return;
+  const isCancelled = o.type === 'cancelled';
+  const typeBadge = isCancelled
+    ? `<span class="bdg" style="background:#F1F5F9;color:#64748B">✕ キャンセル済み</span>`
+    : o.type === 'return'
+      ? `<span class="bdg b-warn">↩ 返品</span>`
+      : o.isBundle ? `<span class="bdg b-ok">🛍 まとめ買い</span>` : `<span class="bdg b-blue">単品注文</span>`;
+  const cancelBanner = isCancelled ? `
+    <div style="margin:0 18px 10px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:10px 14px;font-size:12px;color:#64748B">
+      <b>キャンセル日時:</b> ${fmtDate(o.cancelledAt||o.date, true)}<br>
+      ${o.cancelReason ? `<b>理由:</b> ${cancelReasonJa(o.cancelReason)}` : ''}
+      <div style="margin-top:6px;color:#94A3B8;font-size:11px">※ 在庫計算から除外されています</div>
+    </div>` : '';
+  const itemRows = o.items.map(i => {
+    const p = ST.products.find(x => x.shopifyId === i.productId || x.variants.some(v => v.variantId === i.variantId));
+    const imgEl = p?.localImg || p?.image
+      ? `<img src="${p.localImg||p.image}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0">`
+      : `<div style="width:40px;height:40px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">👕</div>`;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      ${imgEl}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i.productName}</div>
+        <div style="font-size:11px;color:var(--muted)">${i.variantTitle}${i.sku?' · '+i.sku:''}</div>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;flex-shrink:0">×${i.qty}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('sh-order-detail-body').innerHTML = `
+    <div style="padding:18px 18px 10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">${typeBadge}<span style="font-size:13px;font-weight:700;color:var(--muted)">${o.orderNumber||'−'}</span></div>
+      <div style="font-size:11px;color:var(--muted)">${fmtDate(o.date, true)} · ${o.customer||'−'}</div>
+    </div>
+    ${cancelBanner}
+    <div style="padding:0 18px;${isCancelled?'opacity:.5':''}">${itemRows}</div>
+    <div style="padding:14px 18px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">合計: <b>${o.items.reduce((a,i)=>a+i.qty,0)}点</b>${o.note?' · 📝'+o.note:''}</div>
+      <button class="btn btn-sec" onclick="closeSheet('sh-order-detail')">閉じる</button>
+    </div>`;
+  openSheet('sh-order-detail');
+}
+
+function setOF(el, f) {
+  document.querySelectorAll('#order-pills .pill').forEach(p => p.classList.remove('on'));
+  el.classList.add('on'); ST._of = f; renderOrders();
+}
+
+// ══════════════════════════════════════
+// GAS / SHOPIFY SYNC
+// ══════════════════════════════════════
+async function gasGet(params) {
+  const url = ST.gasUrl + '?' + new URLSearchParams(params).toString();
+  const r = await fetch(url, { redirect: 'follow' });
+  const text = await r.text();
+  try {
+    const data = JSON.parse(text);
+    if (data.error) throw new Error(data.error);
+    return data;
+  } catch(e) {
+    throw new Error('GAS parse error: ' + text.slice(0, 100));
+  }
+}
+
+async function gasPost(body) {
+  // text/plain にするとプリフライトが省略されCORSエラーを回避できる
+  const r = await fetch(ST.gasUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body),
+    redirect: 'follow'
+  });
+  const text = await r.text();
+  try {
+    const data = JSON.parse(text);
+    if (data.error) throw new Error(data.error);
+    return data;
+  } catch(e) {
+    throw new Error('GAS post error: ' + text.slice(0, 100));
+  }
+}
+
+async function testGas() {
+  const url = document.getElementById('gas-url').value.trim();
+  if (!url) { toast('URLを入力してください', 'w'); return; }
+  ST.gasUrl = url;
+  toast('接続テスト中…');
+  try {
+    const data = await gasGet({action:'ping'});
+    ST.gasConnected = true;
+    save(); updateConnStatus();
+    toast(`接続成功！ (${data.store})`);
+  } catch(e) {
+    ST.gasConnected = false;
+    save(); updateConnStatus();
+    toast('接続失敗: ' + e.message, 'e');
+  }
+}
+
+async function saveGasUrl() {
+  ST.gasUrl = document.getElementById('gas-url').value.trim();
+  save(); toast('URLを保存しました');
+}
+
+async function syncProducts() {
+  toast('商品を同期中…');
+  try {
+    const data = await gasGet({action:'getProducts'});
+    mergeShopifyProducts(data.products || []);
+    // スプレッドシートにも書き込む
+    await gasPost({action:'saveProducts', products: ST.products});
+    ST.lastSync = new Date().toISOString();
+    save(); renderHome(); renderProds();
+    toast(`商品を同期しました（${data.products?.length||0}件）`);
+  } catch(e) { toast('同期失敗: ' + e.message, 'e'); }
+}
+
+async function syncOrders() {
+  toast('注文を同期中…');
+  try {
+    let allOrders = [];
+    let offset = 0;
+    const pageSize = 250;
+    let hasMore = true;
+    while (hasMore) {
+      const url = ST.gasUrl + '?action=getOrders&offset=' + offset + '&limit=' + pageSize;
+      const r = await fetch(url, { redirect: 'follow' });
+      const text = await r.text();
+      const ordData = JSON.parse(text);
+      if (ordData.orders && ordData.orders.length > 0) {
+        allOrders = allOrders.concat(ordData.orders);
+      }
+      hasMore = ordData.hasMore === true;
+      offset += pageSize;
+      if (offset > 10000) break;
+    }
+    if (allOrders.length > 0) ST.orders = allOrders;
+    ST.lastSync = new Date().toISOString();
+    save(); renderOrders(); renderHome();
+    toast(`注文を同期しました（${allOrders.length}件）`);
+  } catch(e) { toast('同期失敗: ' + e.message, 'e'); }
+}
+
+async function syncAll() {
+  await syncProducts();
+  await syncOrders();
+}
+
+function mergeShopifyProducts(shopifyProds) {
+  shopifyProds.forEach(sp => {
+    const existing = ST.products.find(p => p.shopifyId === sp.shopifyId);
+    if (existing) {
+      // Update name/category/image/variants — preserve local stock
+      existing.name = sp.name;
+      existing.category = sp.category;
+      existing.image = sp.image;
+      // Merge variants: keep existing stock, add new variants
+      sp.variants.forEach(sv => {
+        const ev = existing.variants.find(v => v.variantId === sv.variantId);
+        if (!ev) existing.variants.push({...sv, stock: 0});
+        else { ev.title = sv.title; ev.sku = sv.sku; }
+      });
+    } else {
+      ST.products.push({
+        id: uid(), ...sp, localImg: null, memo: '',
+        variants: sp.variants.map(v => ({...v, stock: 0}))
+      });
+    }
+  });
+}
+
+function mergeShopifyOrders(newOrders) {
+  const existingIds = new Set(ST.orders.map(o => o.shopifyOrderId));
+  newOrders.forEach(o => { if (!existingIds.has(o.shopifyOrderId)) ST.orders.unshift(o); });
+}
+
+// ══════════════════════════════════════
+// GIFTING / DAMAGE ADJUSTMENT
+// ══════════════════════════════════════
+let _adjPid = null;
+let _adjType = 'gifting';
+let _adjQtys = {};
+
+function openAdjust(id, type) {
+  const p = ST.products.find(x => x.id === id);
+  _adjPid = id; _adjType = type; _adjQtys = {};
+  p.variants.forEach(v => { _adjQtys[v.variantId] = 0; });
+  setAdjType(type);
+  document.getElementById('sh-adjust-title').textContent = type === 'gifting' ? '🎁 ギフティング記録' : '💥 製品破損記録';
+  document.getElementById('adj-pname').textContent = p.name;
+  document.getElementById('adj-note').value = '';
+  document.getElementById('adj-note-label').textContent = type === 'gifting' ? '備考（相手先・インフルエンサー名など）' : '備考（破損理由など）';
+  document.getElementById('adj-note').placeholder = type === 'gifting' ? '例：@influencer_name / PR用' : '例：輸送中破損 / 検品不合格';
+  document.getElementById('adj-variant-list').innerHTML = p.variants.map(v => {
+    const sm = soldMap(), rm = returnMap();
+    const net = netForVariant(v, sm, rm);
+    return `<div class="sicell">
+      <div class="silbl">${v.title}<div style="font-size:10px;color:var(--muted);font-weight:400">残: ${net < 0 ? '<span style="color:#7C3AED">'+net+'（超過中）</span>' : net}</div></div>
+      <div class="sictrl">
+        <div class="sib" onclick="adjAQ('${v.variantId}',-1)">−</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;min-width:36px;text-align:center;line-height:1" id="aqn-${v.variantId}">0</div>
+        <div class="sib" onclick="adjAQ('${v.variantId}',1)">＋</div>
+      </div>
+    </div>`;
+  }).join('');
+  openSheet('sh-adjust');
+}
+
+function setAdjType(type) {
+  _adjType = type;
+  ['gifting','damage'].forEach(t => {
+    const el = document.getElementById('atype-' + t);
+    if (!el) return;
+    if (t === type) {
+      el.style.border = '2px solid var(--accent)';
+      el.style.background = 'var(--surface2)';
+    } else {
+      el.style.border = '2px solid var(--border)';
+      el.style.background = 'var(--bg)';
+    }
+  });
+}
+
+function adjAQ(vid, delta) {
+  _adjQtys[vid] = Math.max(0, (_adjQtys[vid] || 0) + delta);
+  document.getElementById('aqn-' + vid).textContent = _adjQtys[vid];
+}
+
+async function saveAdjust() {
+  const p = ST.products.find(x => x.id === _adjPid);
+  const total = Object.values(_adjQtys).reduce((a,b) => a+b, 0);
+  if (total === 0) { toast('数量を入力してください', 'w'); return; }
+  const note = document.getElementById('adj-note').value.trim();
+  const label = _adjType === 'gifting' ? 'ギフティング' : '製品破損';
+
+  // Deduct from stock
+  p.variants.forEach(v => {
+    const q = _adjQtys[v.variantId] || 0;
+    if (q > 0) v.stock = Math.max(0, (v.stock || 0) - q);
+  });
+
+  const detail = p.variants
+    .filter(v => (_adjQtys[v.variantId]||0) > 0)
+    .map(v => `${v.title}×${_adjQtys[v.variantId]}`).join(' ');
+  addLog(label, p.name, detail, note);
+
+  // GASに送信（接続状態に関わらず常に試みる）
+  try {
+    await gasPost({
+      action: 'saveAdjustment',
+      adjustment: {
+        id: uid(), type: _adjType, productId: p.shopifyId || p.id,
+        productName: p.name, note, date: new Date().toISOString(), user: '管理者',
+        variants: p.variants.map(v => ({variantId: v.variantId, title: v.title, qty: _adjQtys[v.variantId]||0}))
+      }
+    });
+    const stockData = await gasGet({action:'getStocks'});
+    applyStocks(stockData.stocks || {});
+  } catch(e) {
+    console.warn('GAS sync failed:', e.message);
+  }
+
+  save(); closeSheet('sh-adjust'); renderHome(); renderProds();
+  toast(`${label}を記録しました（計${total}点）`);
+}
+
+// ══════════════════════════════════════
+// LOGS
+// ══════════════════════════════════════
+function addLog(type, productName, detail, note) {
+  ST.logs.unshift({id: uid(), type, productName, detail, note, date: new Date().toISOString()});
+  if (ST.logs.length > 500) ST.logs = ST.logs.slice(0, 500);
+}
+
+function renderHist() {
+  const f = ST._lf || '';
+  const list = f ? ST.logs.filter(l => l.type === f) : ST.logs;
+  const el = document.getElementById('hist-list');
+  if (!el) return;
+  const cols = {
+    '納品': 'var(--green)', '販売': 'var(--blue)', '返品': 'var(--orange)',
+    'ギフティング': '#7C3AED', '製品破損': 'var(--red)', '調整': 'var(--muted)'
+  };
+  el.innerHTML = list.length === 0
+    ? `<div class="empty"><div class="ei">📋</div><div class="et">履歴がありません</div></div>`
+    : list.map(l => {
+        const col = cols[l.type] || 'var(--muted)';
+        return `<div class="li">
+          <div class="ldot" style="background:${col}"></div>
+          <div class="lbody">
+            <div class="ltext"><b>${l.type}</b> · ${l.productName}</div>
+            <div class="lmeta">${fmtDate(l.date, true)}${l.note ? ' · ' + l.note : ''}</div>
+            ${l.detail ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${l.detail}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+}
+
+function setLFilter(el, f) {
+  document.querySelectorAll('#hist-pills .pill').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  ST._lf = f;
+  renderHist();
+}
+
+// ══════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════
+function renderSettings() {
+  document.getElementById('gas-url').value = ST.gasUrl || '';
+  updateConnStatus();
+  const ls = document.getElementById('last-sync-label');
+  ls.textContent = ST.lastSync ? '最終同期: ' + fmtDate(ST.lastSync, true) : '最終同期: −';
+}
+
+function updateConnStatus() {
+  const dot = document.getElementById('conn-dot');
+  const lbl = document.getElementById('conn-label');
+  const sub = document.getElementById('conn-sub');
+  if (dot) dot.style.background = ST.gasConnected ? 'var(--green)' : 'var(--muted)';
+  if (lbl) lbl.textContent = ST.gasConnected ? 'GAS 接続済み' : '未接続';
+  if (sub) sub.textContent = ST.gasConnected ? ST.gasUrl : 'GAS URLを設定してください';
+}
+
+function showGasCode() {
+  document.getElementById('gascode-pre').textContent = GAS_SOURCE;
+  openSheet('sh-gascode');
+}
+function copyGasCode() {
+  navigator.clipboard.writeText(GAS_SOURCE)
+    .then(() => toast('コードをコピーしました'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = GAS_SOURCE; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      toast('コードをコピーしました');
+    });
+}
+
+function resetAll() {
+  if (!confirm('すべてのデータをリセットしますか？')) return;
+  Object.assign(ST, {products:[], orders:[], deliveries:[], logs:[], lastSync:null});
+  save(); renderHome(); renderProds(); renderOrders();
+  toast('リセットしました', 'w');
+}
+
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+function openSheet(id)  { document.getElementById(id).classList.add('on'); }
+function closeSheet(id) { document.getElementById(id).classList.remove('on'); }
+
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('on'); });
+});
+
+function fmtDate(iso, full = false) {
+  const d = new Date(iso), now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (full) return d.toLocaleDateString('ja-JP') + ' ' + d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+  if (diff === 0) return '今日 ' + d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+  if (diff === 1) return '昨日';
+  return d.toLocaleDateString('ja-JP',{month:'short',day:'numeric'});
+}
+
+function startFresh() {
+  ST._initialized = true;
+  ST.products = []; ST.orders = []; ST.logs = []; ST.deliveries = [];
+  save();
+  document.getElementById('pg-welcome').classList.remove('on');
+  document.getElementById('pg-welcome').style.display = 'none';
+  go('home');
+}
+
+function startWithDemo() {
+  ST._initialized = true;
+  seedDemo();
+  save();
+  document.getElementById('pg-welcome').classList.remove('on');
+  document.getElementById('pg-welcome').style.display = 'none';
+  go('home');
+}
+
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = (type==='w'?'⚠ ':type==='e'?'✕ ':'✓ ') + msg;
+  document.getElementById('twrap').appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; }, 2700);
+  setTimeout(() => el.remove(), 3100);
+}
+
+// ── スプレッドシートの在庫データで各バリアントのstockを上書き ──
+function applyStocks(stocksMap) {
+  _stocksCache = stocksMap || {};
+  // 納品数をv.stockに反映（productId|variantTitleキー）
+  ST.products.forEach(p => {
+    p.variants.forEach(v => {
+      const key = (p.shopifyId || p.id) + '|' + v.title;
+      const s = _stocksCache[key];
+      if (s && s.delivery !== undefined) {
+        v.stock = s.delivery;
+      }
+    });
+  });
+}
+
+function setLoadingStatus(msg) {
+  const el = document.getElementById('ld-status');
+  if (el) el.textContent = msg;
+}
+
+function hideLoading() {
+  const el = document.getElementById('pg-loading');
+  if (!el) return;
+  el.style.opacity = '0';
+  setTimeout(() => { el.style.display = 'none'; }, 400);
+}
+
+async function initApp() {
+  load();
+  ST._initialized = true;
+  ST.products = ST.products || [];
+  ST.orders = ST.orders || [];
+  ST.logs = ST.logs || [];
+  save();
+
+  // Step 1: GAS接続確認（失敗しても続行）
+  setLoadingStatus('接続中…');
+  try {
+    await gasGet({action:'ping'});
+    ST.gasConnected = true; save();
+  } catch(e) {
+    ST.gasConnected = false;
+  }
+
+  // Step 2: 商品データ取得（失敗してもキャッシュを使う）
+  setLoadingStatus('商品データを取得中…');
+  try {
+    const prodData = await gasGet({action:'getProducts'});
+    mergeShopifyProducts(prodData.products || []);
+  } catch(e) {}
+
+  // Step 3: 注文データ取得（スプレッドシートからページネーションで全件取得）
+  setLoadingStatus('注文データを取得中…');
+  try {
+    let allOrders = [];
+    let offset = 0;
+    const pageSize = 250;
+    let hasMore = true;
+    while (hasMore) {
+      const url = ST.gasUrl + '?action=getOrders&offset=' + offset + '&limit=' + pageSize;
+      const r = await fetch(url, { redirect: 'follow' });
+      const text = await r.text();
+      const ordData = JSON.parse(text);
+      if (ordData.orders && ordData.orders.length > 0) {
+        allOrders = allOrders.concat(ordData.orders);
+      }
+      hasMore = ordData.hasMore === true;
+      offset += pageSize;
+      setLoadingStatus('注文データを取得中… ' + allOrders.length + '件');
+      if (offset > 10000) break; // 無限ループ防止
+    }
+    if (allOrders.length > 0) ST.orders = allOrders;
+  } catch(e) { console.warn('注文取得エラー:', e.message); }
+
+  // Step 4: スプレッドシートから在庫数を取得（最重要・必ず実行）
+  setLoadingStatus('在庫数を取得中…');
+  try {
+    const stockData = await gasGet({action:'getStocks'});
+    applyStocks(stockData.stocks || {});
+    save();
+  } catch(e) {
+    console.warn('在庫取得失敗:', e.message);
+  }
+
+  setLoadingStatus('完了！');
+  await new Promise(r => setTimeout(r, 300));
+  hideLoading();
+  renderHome();
+  updateConnStatus();
+}
+
+initApp();
+
+
+</script>
+</body>
+</html>
